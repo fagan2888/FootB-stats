@@ -3,6 +3,7 @@ import urllib2
 import pandas as pd
 import matplotlib.pyplot as plt
 from tqdm import *
+import numpy as np
 
 # Define years
 y1 = ['{}-{}'.format(i,i+1-1900) for i in range(1929,1999)]
@@ -15,9 +16,6 @@ p1.remove('https://en.wikipedia.org/wiki/1943-44_Serie_A')
 p1.remove('https://en.wikipedia.org/wiki/1944-45_Serie_A')
 p1.remove('https://en.wikipedia.org/wiki/1945-46_Serie_A')
 p1.remove('https://en.wikipedia.org/wiki/2005-06_Serie_A')  #Removed because of Calciopoli scandal
-
-p2 = ['https://en.wikipedia.org/wiki/{}_La_Liga'.format(y) for y in years]
-p2.remove('https://en.wikipedia.org/wiki/1943-44_Serie_A')
 
 header = {'User-Agent': 'Mozilla/5.0'} # Needed to prevent 403 error on Wikipedia
 
@@ -57,7 +55,6 @@ def FootB(wpages):
 	# Fill the dataframe
 	for i in range(1, lenrows):
 		team = rows[i].find_all('td')
-		print team[0]
 		for j in range(0, lencols):
 			if j == 0:
 				# Team (it's always an 'a')
@@ -96,10 +93,10 @@ def FootB(wpages):
 
 if __name__ == '__main__':
 
-dff = pd.DataFrame()
-for page in tqdm(p1[:-1]):
-	print page
-	dff = dff.append(FootB(page), ignore_index = True)
+	dff = pd.DataFrame()
+	for page in tqdm(p1[:-1]):
+		print page
+		dff = dff.append(FootB(page), ignore_index = True)
 
-grouped = dff.groupby('Team')
+	grouped = dff.groupby('Team')
 
