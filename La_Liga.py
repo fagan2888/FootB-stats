@@ -13,7 +13,6 @@ y3 = ['{}-{:02d}'.format(i,i+1-2000) for i in range(2000,2015)]
 years = np.concatenate([y1,y2,y3])
 
 p1 = ['https://en.wikipedia.org/wiki/{}_La_Liga'.format(y) for y in years]
-#p1.remove('https://en.wikipedia.org/wiki/1943-44_Serie_A')
 
 header = {'User-Agent': 'Mozilla/5.0'} # Needed to prevent 403 error on Wikipedia
 wpage = 'https://en.wikipedia.org/wiki/1954-55_La_Liga'
@@ -49,14 +48,16 @@ def FootB(wpage):
 	for i in range(1, lenrows):
 		team = rows[i].find_all('td')
 		df.Team.ix[i] = team[np.where(df.columns == 'Team')[0][0]].a.get_text().encode('ascii', 'ignore')
-		df.Pts.ix[i] = team[np.where(df.columns == 'Pts')[0][0]].b.get_text().encode('ascii', 'ignore')
-		maskedix = np.where((df.columns != 'Team') & (df.columns != 'Pts'))[0]
-		if maskedix[-1] != (len(team) - 1):
-			maskedix = maskedix[0:-1]
-		for j in maskedix:
-			df[df.columns[j]].ix[i] = team[j].get_text().encode('ascii', 'ignore')
+		#df.Pts.ix[i] = team[np.where(df.columns == 'Pts')[0][0]].b.get_text().encode('ascii', 'ignore')
+		df.Pld.ix[i] = team[np.where(df.columns == 'Pld')[0][0]].get_text().encode('ascii', 'ignore')
+		df.W.ix[i] = team[np.where(df.columns == 'W')[0][0]].get_text().encode('ascii', 'ignore')
+		df.D.ix[i] = team[np.where(df.columns == 'D')[0][0]].get_text().encode('ascii', 'ignore')
+		df.L.ix[i] = team[np.where(df.columns == 'L')[0][0]].get_text().encode('ascii', 'ignore')
+		df.GF.ix[i] = team[np.where(df.columns == 'GF')[0][0]].get_text().encode('ascii', 'ignore')
+		df.GA.ix[i] = team[np.where(df.columns == 'GA')[0][0]].get_text().encode('ascii', 'ignore')
+		df.GD.ix[i] = team[np.where(df.columns == 'GD')[0][0]].get_text().encode('ascii', 'ignore')
 
-	df = df[['Team', 'Pld', 'W', 'D', 'L', 'GF', 'GA', 'Pts', 'GD']]
+	df = df[['Team', 'Pld', 'W', 'D', 'L', 'GF', 'GA', 'GD']]
 
 	# Add year column 
 	year = wpage.split('/')[-1].split('_')[0]
@@ -68,21 +69,20 @@ def FootB(wpage):
 	
 	# Add ladder position from the index
 	df['Pos'] = df.index
-	
+
 	# Transform to integers
-	coltmp = ['Pos', 'Pld', 'W', 'D', 'L', 'GF', 'GA','GD','Pts']
+	coltmp = ['Pos', 'Pld', 'W', 'D', 'L', 'GF', 'GA','GD']
 	df[coltmp] = df[coltmp].astype(float).astype(int)
 
 	# Redefine Pts using Italian standard scoring system
-	df.Pts = df.W * 3. + df.D
+	df['Pts'] = df.W * 3. + df.D
 
 	return df
-
 
 if __name__ == '__main__':
 
 	dff = pd.DataFrame()
-	for page in p1[41:80]:
+	for page in p1[0:-1]:
 		h = httplib2.Http()
 		resp = h.request(page, 'HEAD')
 		if int(resp[0]['status']) < 400:	
