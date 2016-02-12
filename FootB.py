@@ -12,12 +12,18 @@ y2 = ['1999-2000']
 y3 = ['{}-{:02d}'.format(i,i+1-2000) for i in range(2000,2015)]
 years = np.concatenate([y1,y2,y3])
 
-p1 = ['https://en.wikipedia.org/wiki/{}_La_Liga'.format(y) for y in years]
+list_La_Liga = ['https://en.wikipedia.org/wiki/{}_La_Liga'.format(y) for y in years]
+list_Serie_A = ['https://en.wikipedia.org/wiki/{}_Serie_A'.format(y) for y in years]
+list_Serie_A.remove('https://en.wikipedia.org/wiki/2005-06_Serie_A')  #Removed because of Calciopoli scandal
 
 header = {'User-Agent': 'Mozilla/5.0'} # Needed to prevent 403 error on Wikipedia
-wpage = 'https://en.wikipedia.org/wiki/1954-55_La_Liga'
 
-def FootB(wpage):
+def league_name(wpage):
+	a = wpage.split('_')[1:][0]
+	b = wpage.split('_')[1:][1]
+	return a + ' ' + b
+
+def FootB(wpage, league_name):
 
 	req = urllib2.Request(wpage, headers = header)
 	page = urllib2.urlopen(req)
@@ -48,7 +54,6 @@ def FootB(wpage):
 	for i in range(1, lenrows):
 		team = rows[i].find_all('td')
 		df.Team.ix[i] = team[np.where(df.columns == 'Team')[0][0]].a.get_text().encode('ascii', 'ignore')
-		#df.Pts.ix[i] = team[np.where(df.columns == 'Pts')[0][0]].b.get_text().encode('ascii', 'ignore')
 		df.Pld.ix[i] = team[np.where(df.columns == 'Pld')[0][0]].get_text().encode('ascii', 'ignore')
 		df.W.ix[i] = team[np.where(df.columns == 'W')[0][0]].get_text().encode('ascii', 'ignore')
 		df.D.ix[i] = team[np.where(df.columns == 'D')[0][0]].get_text().encode('ascii', 'ignore')
@@ -62,6 +67,7 @@ def FootB(wpage):
 	# Add year column 
 	year = wpage.split('/')[-1].split('_')[0]
 	df['year'] = year
+	df['league'] = league_name
 
 	# Replace Unicode minus sign with '-'
 	mask = df.GD.apply(lambda x: ('+' in x) | ('-' in x) )
@@ -82,10 +88,16 @@ def FootB(wpage):
 if __name__ == '__main__':
 
 	dff = pd.DataFrame()
-	for page in p1[0:-1]:
+
+	for page in list_Serie_A[0:-1]:
+		
+
 		h = httplib2.Http()
 		resp = h.request(page, 'HEAD')
+
 		if int(resp[0]['status']) < 400:	
 			print page
-			dff = dff.append(FootB(page), ignore_index = True)
+
+			df = FootB(page, league_name(page))
+			dff = dff.append(df, ignore_index = True)
 
