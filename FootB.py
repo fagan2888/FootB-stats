@@ -9,12 +9,14 @@ import httplib2
 # Define years
 y1 = ['{}-{}'.format(i,i+1-1900) for i in range(1929,1999)]
 y2 = ['1999-2000']
-y3 = ['{}-{:02d}'.format(i,i+1-2000) for i in range(2000,2015)]
+y3 = ['{}-{:02d}'.format(i,i+1-2000) for i in range(2000,2014)]
 years = np.concatenate([y1,y2,y3])
 
 list_La_Liga = ['https://en.wikipedia.org/wiki/{}_La_Liga'.format(y) for y in years]
 list_Serie_A = ['https://en.wikipedia.org/wiki/{}_Serie_A'.format(y) for y in years]
 list_Serie_A.remove('https://en.wikipedia.org/wiki/2005-06_Serie_A')  #Removed because of Calciopoli scandal
+
+final_list = np.concatenate((list_La_Liga,list_Serie_A))
 
 header = {'User-Agent': 'Mozilla/5.0'} # Needed to prevent 403 error on Wikipedia
 
@@ -89,7 +91,7 @@ if __name__ == '__main__':
 
 	dff = pd.DataFrame()
 
-	for page in list_Serie_A[0:-1]:
+	for page in final_list:
 		
 
 		h = httplib2.Http()
@@ -101,3 +103,6 @@ if __name__ == '__main__':
 			df = FootB(page, league_name(page))
 			dff = dff.append(df, ignore_index = True)
 
+#ff = grouped.aggregate(np.max)['W']
+#for key, grp in grouped:
+#    plt.plot(grp.aggregate(np.max)['W'], label=key)
