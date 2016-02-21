@@ -24,7 +24,7 @@ y1 = ['{}-{}'.format(i,i+1-1900) for i in range(1992,1999)]
 years = np.concatenate([y1,y2,y3])
 list_Premier_League = ['https://en.wikipedia.org/wiki/{}_Premier_League'.format(y) for y in years]
 
-final_list = np.concatenate((list_La_Liga,list_Serie_A))
+final_list = np.concatenate((list_La_Liga,list_Serie_A, list_Football_League, list_Premier_League))
 
 header = {'User-Agent': 'Mozilla/5.0'} # Needed to prevent 403 error on Wikipedia
 
@@ -37,19 +37,30 @@ def FootB(wpage, league_name):
 
 	req = urllib2.Request(wpage, headers = header)
 	page = urllib2.urlopen(req)
-	soup = BeautifulSoup(page, 'html5lib')	
+	soup = BeautifulSoup(page, 'html5lib')
 
-	all_tables = soup.find_all("table")
-	theone = [u'W', u'D','L']
+	all_tables = soup.find_all('table')
+	theone = [u'W', u'D']
 	
-	for j in range(0,len(all_tables)):
-		rows = all_tables[j].find_all('tr')
-		lencols = len(rows[0].find_all('th')) 
-		cols = np.array([rows[0].find_all("th")[i].get_text().encode('ascii', 'ignore') for i in range(0, lencols)])
+	for table in all_tables:
+		all_rows = table.find_all('tr')
+		lencols = len(all_rows[0].find_all('th')) 
+		cols = np.array([all_rows[0].find_all('th')[i].get_text().encode('ascii', 'ignore') for i in range(0, lencols)])
 		if (theone[0] in cols) & (theone[1] in cols):
-			lenrows = len(rows) - 1
+			# Masks rows which are not related to Team information 
+			rows = []
+			for r in all_rows:
+   				 if len(r) > 5:
+   				 	rows.append(r)
+			#mask = np.array([len(r) > 3 for r in rows])
+			# rows = np.array(rows)[mask]
+			lenrows = len(rows)
 			break
 
+	year = wpage.split('/')[-1].split('_')[0]
+	# Remove unicode extra-characters from the 'Team' column for recent seasons
+	if len(cols[1]) > 10:
+		cols[1] = cols[1].strip('\n\n\nv\nt\ne\n\n\n\n')
 	cols[cols == 'Club'] = 'Team'	
 	cols[cols == 'Played'] = 'Pld'
 	cols[cols == 'Points'] = 'Pts'	
@@ -58,11 +69,10 @@ def FootB(wpage, league_name):
 
 	columns = ['Team', 'Pld', 'W', 'D', 'L', 'GF', 'GA', 'GD']
 	# Create empty pandas dataframe
-	df = pd.DataFrame(columns = columns, index = range(1, lenrows + 1))
+	df = pd.DataFrame(columns = columns, index = range(1, lenrows))
 
 	# Fill the dataframe
-	for i in range(1, lenrows + 1):
-		print i
+	for i in range(1, lenrows):
 		team = rows[i].find_all('td')
 		df.Team.ix[i] = team[np.where(cols == 'Team')[0][0]].a.get_text().encode('ascii', 'ignore')
 		df.Pld.ix[i] = team[np.where(cols == 'Pld')[0][0]].get_text().encode('ascii', 'ignore')
@@ -81,9 +91,7 @@ def FootB(wpage, league_name):
 			df['GD'].ix[i] = team[mask[0]].get_text().encode('ascii', 'ignore').strip() # strip() is needed to 
 																						# strip whitespaces in
 																						# some seasons
-
-	# Add year column 
-	year = wpage.split('/')[-1].split('_')[0]
+	# Add year and league name 
 	df['year'] = year
 	df['league'] = league_name
 
@@ -109,7 +117,7 @@ if __name__ == '__main__':
 
 	dff = pd.DataFrame()
 
-	for page in list_Premier_League:
+	for page in final_list:
 		
 		h = httplib2.Http()
 		resp = h.request(page, 'HEAD')
