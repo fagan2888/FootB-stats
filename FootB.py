@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 from tqdm import *
 import numpy as np
 import httplib2
+import re
 
-#test
 # Define years
 y1 = ['{}-{}'.format(i,i+1-1900) for i in range(1929,1999)]
 y2 = ['1999-2000']
@@ -19,6 +19,10 @@ list_Serie_A.remove('https://en.wikipedia.org/wiki/2005-06_Serie_A')  #Removed b
 
 years = ['{}-{}'.format(i,i+1-1900) for i in range(1926,1992)]
 list_Football_League = ['https://en.wikipedia.org/wiki/{}_Football_League'.format(y) for y in years]
+
+y1 = ['{}-{}'.format(i,i+1-1900) for i in range(1992,1999)]
+years = np.concatenate([y1,y2,y3])
+list_Premier_League = ['https://en.wikipedia.org/wiki/{}_Premier_League'.format(y) for y in years]
 
 final_list = np.concatenate((list_La_Liga,list_Serie_A))
 
@@ -39,8 +43,8 @@ def FootB(wpage, league_name):
 	theone = [u'W', u'D','L']
 	
 	for j in range(0,len(all_tables)):
-		rows = all_tables[j].find_all("tr")
-		lencols = len(rows[0].find_all("th")) 
+		rows = all_tables[j].find_all('tr')
+		lencols = len(rows[0].find_all('th')) 
 		cols = np.array([rows[0].find_all("th")[i].get_text().encode('ascii', 'ignore') for i in range(0, lencols)])
 		if (theone[0] in cols) & (theone[1] in cols):
 			lenrows = len(rows) - 1
@@ -58,6 +62,7 @@ def FootB(wpage, league_name):
 
 	# Fill the dataframe
 	for i in range(1, lenrows + 1):
+		print i
 		team = rows[i].find_all('td')
 		df.Team.ix[i] = team[np.where(cols == 'Team')[0][0]].a.get_text().encode('ascii', 'ignore')
 		df.Pld.ix[i] = team[np.where(cols == 'Pld')[0][0]].get_text().encode('ascii', 'ignore')
@@ -73,7 +78,9 @@ def FootB(wpage, league_name):
 				df[colnames].ix[i] = int(team[mask[0]].get_text().encode('ascii', 'ignore'))
 
 			mask = np.where(cols == 'GD')[0]
-			df['GD'].ix[i] = team[mask[0]].get_text().encode('ascii', 'ignore')
+			df['GD'].ix[i] = team[mask[0]].get_text().encode('ascii', 'ignore').strip() # strip() is needed to 
+																						# strip whitespaces in
+																						# some seasons
 
 	# Add year column 
 	year = wpage.split('/')[-1].split('_')[0]
@@ -81,6 +88,8 @@ def FootB(wpage, league_name):
 	df['league'] = league_name
 
 	# Replace Unicode minus sign with '-'
+	if ' ' in df.GD.values.any():
+		df.GD = df.GD.map(lambda x: re.sub('[\s+]', '', x))
 	mask = df.GD.apply(lambda x: ('+' in x) | ('-' in x))
 	df.GD[~mask] = '-' + df.GD[~mask]
 	
@@ -100,7 +109,7 @@ if __name__ == '__main__':
 
 	dff = pd.DataFrame()
 
-	for page in list_Football_League:
+	for page in list_Premier_League:
 		
 		h = httplib2.Http()
 		resp = h.request(page, 'HEAD')
