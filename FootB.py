@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from tqdm import *
 import numpy as np
 import httplib2
+import re
 
 # Define years
 y1 = ['{}-{}'.format(i,i+1-1900) for i in range(1929,1999)]
@@ -16,7 +17,14 @@ list_La_Liga = ['https://en.wikipedia.org/wiki/{}_La_Liga'.format(y) for y in ye
 list_Serie_A = ['https://en.wikipedia.org/wiki/{}_Serie_A'.format(y) for y in years]
 list_Serie_A.remove('https://en.wikipedia.org/wiki/2005-06_Serie_A')  #Removed because of Calciopoli scandal
 
-final_list = np.concatenate((list_La_Liga,list_Serie_A))
+years = ['{}-{}'.format(i,i+1-1900) for i in range(1926,1992)]
+list_Football_League = ['https://en.wikipedia.org/wiki/{}_Football_League'.format(y) for y in years]
+
+y1 = ['{}-{}'.format(i,i+1-1900) for i in range(1992,1999)]
+years = np.concatenate([y1,y2,y3])
+list_Premier_League = ['https://en.wikipedia.org/wiki/{}_Premier_League'.format(y) for y in years]
+
+final_list = np.concatenate((list_La_Liga,list_Serie_A, list_Football_League, list_Premier_League))
 
 header = {'User-Agent': 'Mozilla/5.0'} # Needed to prevent 403 error on Wikipedia
 
@@ -29,50 +37,68 @@ def FootB(wpage, league_name):
 
 	req = urllib2.Request(wpage, headers = header)
 	page = urllib2.urlopen(req)
-	soup = BeautifulSoup(page, 'html5lib')	
+	soup = BeautifulSoup(page, 'html5lib')
 
-	all_tables = soup.find_all("table")
-	theone = [u'W', u'D','L']
+	all_tables = soup.find_all('table')
+	theone = [u'W', u'D']
 	
-	for j in range(0,len(all_tables)):
-		rows = all_tables[j].find_all("tr")
-		lencols = len(rows[0].find_all("th")) 
-		cols = [rows[0].find_all("th")[i].get_text().encode('ascii', 'ignore') for i in range(0, lencols)]
+	for table in all_tables:
+		all_rows = table.find_all('tr')
+		lencols = len(all_rows[0].find_all('th')) 
+		cols = np.array([all_rows[0].find_all('th')[i].get_text().encode('ascii', 'ignore') for i in range(0, lencols)])
 		if (theone[0] in cols) & (theone[1] in cols):
-			lenrows = len(rows) - 1
+			# Masks rows which are not related to Team information 
+			rows = []
+			for r in all_rows:
+   				 if len(r) > 5:
+   				 	rows.append(r)
+			#mask = np.array([len(r) > 3 for r in rows])
+			# rows = np.array(rows)[mask]
+			lenrows = len(rows)
 			break
 
-	columns = pd.Series(cols)
-	columns[columns == 'Club'] = 'Team'	
-	columns[columns == 'Played'] = 'Pld'
-	columns[columns == 'Points'] = 'Pts'		
+	year = wpage.split('/')[-1].split('_')[0]
+	# Remove unicode extra-characters from the 'Team' column for recent seasons
+	if len(cols[1]) > 10:
+		cols[1] = cols[1].strip('\n\n\nv\nt\ne\n\n\n\n')
+	cols[cols == 'Club'] = 'Team'	
+	cols[cols == 'Played'] = 'Pld'
+	cols[cols == 'Points'] = 'Pts'	
+	cols[cols == 'F'] = 'GF'
+	cols[cols == 'A'] = 'GA'	
 
-	lencols = len(columns)
-
+	columns = ['Team', 'Pld', 'W', 'D', 'L', 'GF', 'GA', 'GD']
 	# Create empty pandas dataframe
 	df = pd.DataFrame(columns = columns, index = range(1, lenrows))
 
 	# Fill the dataframe
 	for i in range(1, lenrows):
 		team = rows[i].find_all('td')
-		df.Team.ix[i] = team[np.where(df.columns == 'Team')[0][0]].a.get_text().encode('ascii', 'ignore')
-		df.Pld.ix[i] = team[np.where(df.columns == 'Pld')[0][0]].get_text().encode('ascii', 'ignore')
-		df.W.ix[i] = team[np.where(df.columns == 'W')[0][0]].get_text().encode('ascii', 'ignore')
-		df.D.ix[i] = team[np.where(df.columns == 'D')[0][0]].get_text().encode('ascii', 'ignore')
-		df.L.ix[i] = team[np.where(df.columns == 'L')[0][0]].get_text().encode('ascii', 'ignore')
-		df.GF.ix[i] = team[np.where(df.columns == 'GF')[0][0]].get_text().encode('ascii', 'ignore')
-		df.GA.ix[i] = team[np.where(df.columns == 'GA')[0][0]].get_text().encode('ascii', 'ignore')
-		df.GD.ix[i] = team[np.where(df.columns == 'GD')[0][0]].get_text().encode('ascii', 'ignore')
+		df.Team.ix[i] = team[np.where(cols == 'Team')[0][0]].a.get_text().encode('ascii', 'ignore')
+		df.Pld.ix[i] = team[np.where(cols == 'Pld')[0][0]].get_text().encode('ascii', 'ignore')
+		
+		for colnames in ['W', 'D', 'L', 'GF', 'GA']:
+			mask = np.where(cols == colnames)[0]
+			x0 = 0 
+			if len(mask) > 1:
+				for m in [0,1]: 
+					x0 += int(team[mask[m]].get_text().encode('ascii', 'ignore'))
+					df[colnames].ix[i] = x0
+			else: 
+				df[colnames].ix[i] = int(team[mask[0]].get_text().encode('ascii', 'ignore'))
 
-	df = df[['Team', 'Pld', 'W', 'D', 'L', 'GF', 'GA', 'GD']]
-
-	# Add year column 
-	year = wpage.split('/')[-1].split('_')[0]
+			mask = np.where(cols == 'GD')[0]
+			df['GD'].ix[i] = team[mask[0]].get_text().encode('ascii', 'ignore').strip() # strip() is needed to 
+																						# strip whitespaces in
+																						# some seasons
+	# Add year and league name 
 	df['year'] = year
 	df['league'] = league_name
 
 	# Replace Unicode minus sign with '-'
-	mask = df.GD.apply(lambda x: ('+' in x) | ('-' in x) )
+	if ' ' in df.GD.values.any():
+		df.GD = df.GD.map(lambda x: re.sub('[\s+]', '', x))
+	mask = df.GD.apply(lambda x: ('+' in x) | ('-' in x))
 	df.GD[~mask] = '-' + df.GD[~mask]
 	
 	# Add ladder position from the index
@@ -93,7 +119,6 @@ if __name__ == '__main__':
 
 	for page in final_list:
 		
-
 		h = httplib2.Http()
 		resp = h.request(page, 'HEAD')
 
