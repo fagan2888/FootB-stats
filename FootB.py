@@ -8,23 +8,27 @@ import httplib2
 import re
 
 # Define years
-y1 = ['{}-{}'.format(i,i+1-1900) for i in range(1929,1999)]
-y2 = ['1999-2000']
-y3 = ['{}-{:02d}'.format(i,i+1-2000) for i in range(2000,2014)]
-years = np.concatenate([y1,y2,y3])
 
-list_La_Liga = ['https://en.wikipedia.org/wiki/{}_La_Liga'.format(y) for y in years]
-list_Serie_A = ['https://en.wikipedia.org/wiki/{}_Serie_A'.format(y) for y in years]
+def years(start, end):
+	if end < 2000:
+		output = ['{}-{}'.format(i,i+1-1900) for i in range(start,end)]
+	else:
+		y1 = ['{}-{}'.format(i,i+1-1900) for i in range(start,1999)]
+		y2 = ['1999-2000']
+		y3 = ['{}-{:02d}'.format(i,i+1-2000) for i in range(2000,end)]
+		output = y1 + y2 + y3
+	return output
+
+list_La_Liga = ['https://en.wikipedia.org/wiki/{}_La_Liga'.format(y) for y in years(1930,2014)]
+list_Serie_A = ['https://en.wikipedia.org/wiki/{}_Serie_A'.format(y) for y in years(1930,2014)]
 list_Serie_A.remove('https://en.wikipedia.org/wiki/2005-06_Serie_A')  #Removed because of Calciopoli scandal
 
-years = ['{}-{}'.format(i,i+1-1900) for i in range(1926,1992)]
-list_Football_League = ['https://en.wikipedia.org/wiki/{}_Football_League'.format(y) for y in years]
+list_Football_League = ['https://en.wikipedia.org/wiki/{}_Football_League'.format(y) for y in years(1926,1992)]
+list_Premier_League = ['https://en.wikipedia.org/wiki/{}_Premier_League'.format(y) for y in years(1992,1999)]
 
-y1 = ['{}-{}'.format(i,i+1-1900) for i in range(1992,1999)]
-years = np.concatenate([y1,y2,y3])
-list_Premier_League = ['https://en.wikipedia.org/wiki/{}_Premier_League'.format(y) for y in years]
+list_French_Division = ['https://en.wikipedia.org/wiki/{}_French_Division_1'.format(y) for y in years(1933, 1999)]
 
-final_list = np.concatenate((list_La_Liga,list_Serie_A, list_Football_League, list_Premier_League))
+final_list = np.concatenate((list_La_Liga,list_Serie_A, list_Football_League, list_Premier_League, list_French_Division))
 
 header = {'User-Agent': 'Mozilla/5.0'} # Needed to prevent 403 error on Wikipedia
 
@@ -52,8 +56,6 @@ def FootB(wpage, league_name):
 			for r in all_rows:
    				 if len(r) > 5:
    				 	rows.append(r)
-			#mask = np.array([len(r) > 3 for r in rows])
-			# rows = np.array(rows)[mask]
 			lenrows = len(rows)
 			break
 
