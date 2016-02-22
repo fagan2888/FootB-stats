@@ -20,15 +20,19 @@ def years(start, end):
 	return output
 
 list_La_Liga = ['https://en.wikipedia.org/wiki/{}_La_Liga'.format(y) for y in years(1930,2014)]
+
 list_Serie_A = ['https://en.wikipedia.org/wiki/{}_Serie_A'.format(y) for y in years(1930,2014)]
 list_Serie_A.remove('https://en.wikipedia.org/wiki/2005-06_Serie_A')  #Removed because of Calciopoli scandal
 
 list_Football_League = ['https://en.wikipedia.org/wiki/{}_Football_League'.format(y) for y in years(1926,1992)]
-list_Premier_League = ['https://en.wikipedia.org/wiki/{}_Premier_League'.format(y) for y in years(1992,1999)]
+list_Premier_League = ['https://en.wikipedia.org/wiki/{}_Premier_League'.format(y) for y in years(1992,2014)]
 
-list_French_Division = ['https://en.wikipedia.org/wiki/{}_French_Division_1'.format(y) for y in years(1933, 1999)]
+list_French_Division = ['https://en.wikipedia.org/wiki/{}_French_Division_1'.format(y) for y in years(1933, 2001)]
+list_Ligue_1 = ['https://en.wikipedia.org/wiki/{}_Ligue_1'.format(y) for y in years(2002, 2014)]
+list_Ligue_1.remove('https://en.wikipedia.org/wiki/2003-04_Ligue_1')  #Removed because of Calciopoli scandal
 
-final_list = np.concatenate((list_La_Liga,list_Serie_A, list_Football_League, list_Premier_League, list_French_Division))
+final_list = (list_La_Liga + list_Serie_A + list_Football_League + 
+			 list_Premier_League + list_French_Division + list_Ligue_1)
 
 header = {'User-Agent': 'Mozilla/5.0'} # Needed to prevent 403 error on Wikipedia
 
@@ -50,7 +54,21 @@ def FootB(wpage, league_name):
 		all_rows = table.find_all('tr')
 		lencols = len(all_rows[0].find_all('th')) 
 		cols = np.array([all_rows[0].find_all('th')[i].get_text().encode('ascii', 'ignore') for i in range(0, lencols)])
+		
 		if (theone[0] in cols) & (theone[1] in cols):
+
+			if len(cols[1]) > 10:
+				cols[1] = cols[1].strip('\n\n\nv\nt\ne\n\n\n\n')
+			cols[cols == 'Club'] = 'Team'	
+			cols[cols == 'Played'] = 'Pld'
+			cols[cols == 'Points'] = 'Pts'	
+			cols[cols == 'Wins'] = 'W'	
+			cols[cols == 'Draws'] = 'D'	
+			cols[cols == 'Losses'] = 'L'	
+			cols[cols == 'Goals for'] = 'GF'
+			cols[cols == 'Goals against'] = 'GA'	
+			cols[cols == 'F'] = 'GF'
+			cols[cols == 'A'] = 'GA'	
 			# Masks rows which are not related to Team information 
 			rows = []
 			for r in all_rows:
@@ -61,13 +79,6 @@ def FootB(wpage, league_name):
 
 	year = wpage.split('/')[-1].split('_')[0]
 	# Remove unicode extra-characters from the 'Team' column for recent seasons
-	if len(cols[1]) > 10:
-		cols[1] = cols[1].strip('\n\n\nv\nt\ne\n\n\n\n')
-	cols[cols == 'Club'] = 'Team'	
-	cols[cols == 'Played'] = 'Pld'
-	cols[cols == 'Points'] = 'Pts'	
-	cols[cols == 'F'] = 'GF'
-	cols[cols == 'A'] = 'GA'	
 
 	columns = ['Team', 'Pld', 'W', 'D', 'L', 'GF', 'GA', 'GD']
 	# Create empty pandas dataframe
@@ -90,11 +101,19 @@ def FootB(wpage, league_name):
 				df[colnames].ix[i] = int(team[mask[0]].get_text().encode('ascii', 'ignore'))
 
 			mask = np.where(cols == 'GD')[0]
-			df['GD'].ix[i] = team[mask[0]].get_text().encode('ascii', 'ignore').strip() # strip() is needed to 
-																						# strip whitespaces in
-																						# some seasons
+	
+		if 'GD' in cols:
+			# strip() is needed to strip whitespaces in some seasons
+			df['GD'].ix[i] = team[mask[0]].get_text().encode('ascii', 'ignore').strip() 
+	
 	# Add year and league name 
 	df['year'] = year
+	if league_name == 'Football League':
+		league_name = 'Premier League'
+
+	if league_name == 'French Division':
+		league_name = 'Ligue 1'
+
 	df['league'] = league_name
 
 	# Replace Unicode minus sign with '-'
