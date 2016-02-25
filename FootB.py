@@ -78,7 +78,6 @@ def FootB(wpage, league_name):
 			break
 
 	year = wpage.split('/')[-1].split('_')[0]
-	# Remove unicode extra-characters from the 'Team' column for recent seasons
 
 	columns = ['Team', 'Pld', 'W', 'D', 'L', 'GF', 'GA', 'GD']
 	# Create empty pandas dataframe
@@ -107,7 +106,7 @@ def FootB(wpage, league_name):
 			df['GD'].ix[i] = team[mask[0]].get_text().encode('ascii', 'ignore').strip() 
 	
 	# Add year and league name 
-	df['year'] = year
+	df['year'] = pd.Period(year.split('-')[0]) + 1
 	if league_name == 'Football League':
 		league_name = 'Premier League'
 
