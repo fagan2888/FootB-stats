@@ -1,8 +1,6 @@
 from bs4 import BeautifulSoup
 import urllib2
 import pandas as pd
-import matplotlib.pyplot as plt
-from tqdm import *
 import numpy as np
 import httplib2
 import re
@@ -18,21 +16,6 @@ def years(start, end):
 		y3 = ['{}-{:02d}'.format(i,i+1-2000) for i in range(2000,end)]
 		output = y1 + y2 + y3
 	return output
-
-list_La_Liga = ['https://en.wikipedia.org/wiki/{}_La_Liga'.format(y) for y in years(1930,2014)]
-
-list_Serie_A = ['https://en.wikipedia.org/wiki/{}_Serie_A'.format(y) for y in years(1930,2014)]
-list_Serie_A.remove('https://en.wikipedia.org/wiki/2005-06_Serie_A')  #Removed because of Calciopoli scandal
-
-list_Football_League = ['https://en.wikipedia.org/wiki/{}_Football_League'.format(y) for y in years(1926,1992)]
-list_Premier_League = ['https://en.wikipedia.org/wiki/{}_Premier_League'.format(y) for y in years(1992,2014)]
-
-list_French_Division = ['https://en.wikipedia.org/wiki/{}_French_Division_1'.format(y) for y in years(1933, 2001)]
-list_Ligue_1 = ['https://en.wikipedia.org/wiki/{}_Ligue_1'.format(y) for y in years(2002, 2014)]
-list_Ligue_1.remove('https://en.wikipedia.org/wiki/2003-04_Ligue_1')  #Removed because of Calciopoli scandal
-
-final_list = (list_La_Liga + list_Serie_A + list_Football_League + 
-			 list_Premier_League + list_French_Division + list_Ligue_1)
 
 header = {'User-Agent': 'Mozilla/5.0'} # Needed to prevent 403 error on Wikipedia
 
@@ -124,6 +107,7 @@ def FootB(wpage, league_name):
 	# Add ladder position from the index
 	df['Pos'] = df.index
 
+	df['Pld'] = df.Pld.map(lambda x: x[0:2])
 	# Transform to integers
 	coltmp = ['Pos', 'Pld', 'W', 'D', 'L', 'GF', 'GA','GD']
 	df[coltmp] = df[coltmp].astype(float).astype(int)
@@ -132,22 +116,3 @@ def FootB(wpage, league_name):
 	df['Pts'] = df.W * 3. + df.D
 
 	return df
-
-if __name__ == '__main__':
-
-	dff = pd.DataFrame()
-
-	for page in final_list:
-		
-		h = httplib2.Http()
-		resp = h.request(page, 'HEAD')
-
-		if int(resp[0]['status']) < 400:	
-			print page
-
-			df = FootB(page, league_name(page))
-			dff = dff.append(df, ignore_index = True)
-
-#ff = grouped.aggregate(np.max)['W']
-#for key, grp in grouped:
-#    plt.plot(grp.aggregate(np.max)['W'], label=key)
