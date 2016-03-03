@@ -5,5 +5,5 @@ A python script which scraps data from wikipedia pages of European championship 
 
 The code is written in python and relies on BeautifulSoup, Pandas and numpy.
 
-<img src="https://github.com/vincepota/FootB-stats/netbook/W.png" width="600">
+<img src="https://github.com/vincepota/FootB-stats/notebook/W.png " width="600">
 
