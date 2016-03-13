@@ -32,23 +32,26 @@ for page in final_list:
 		df = FootB(page, league_name(page))
 		dff = dff.append(df, ignore_index = True)
 
-# Finally, let's have some fun!
+dff.to_csv('results.csv', index = False )
 
-dff['TN'] = dff['Pld']/2. + 1
+# Finally, let's have some fun!
+dff['TN'] = dff['Pld']/2. + 1 # Number of teams
 dff['Wn'] = dff['W']/dff['TN']
 dff['Dn'] = dff['D']/dff['TN']
 dff['Ln'] = dff['L']/dff['TN']
 dff['GFn'] = dff['GF']/dff['TN']
 dff['GAn'] = dff['GA']/dff['TN']
 dff['GDn'] = dff['GD']/dff['TN']
-
 sfactor = 5
+
+
 MAX = dff.groupby(['year','league']).max().unstack().apply(pd.Series.interpolate)
-pd.rolling_mean(MAX['W'], 5).plot(lw = 1.5)
+pd.rolling_mean(MAX['Wn'], sfactor).plot(lw = 1.5)
+pd.rolling_mean(MAX['GFn'], sfactor).plot(lw = 1.5)
 
 MEAN = dff.groupby(['year','league']).mean().unstack().apply(pd.Series.interpolate)
 pd.rolling_mean(MEAN['Wn'], sfactor).plot(lw = 1.5)
+pd.rolling_mean(MEAN['GFn'], sfactor).plot(lw = 1.5)
+pd.rolling_mean(MEAN['GAn'], sfactor).plot(lw = 1.5)
 
 
-
-gg.Pld.map(lambda x: np.where(len(x)>2))

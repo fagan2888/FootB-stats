@@ -106,7 +106,6 @@ def FootB(wpage, league_name):
 	
 	# Add ladder position from the index
 	df['Pos'] = df.index
-
 	df['Pld'] = df.Pld.map(lambda x: x[0:2])
 	# Transform to integers
 	coltmp = ['Pos', 'Pld', 'W', 'D', 'L', 'GF', 'GA','GD']
