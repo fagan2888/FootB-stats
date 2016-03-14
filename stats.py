@@ -32,26 +32,67 @@ for page in final_list:
 		df = FootB(page, league_name(page))
 		dff = dff.append(df, ignore_index = True)
 
-dff.to_csv('results.csv', index = False )
+#dff.to_csv('results.csv', index = False )
+
+df = pd.read_csv('results.csv')
 
 # Finally, let's have some fun!
-dff['TN'] = dff['Pld']/2. + 1 # Number of teams
-dff['Wn'] = dff['W']/dff['TN']
-dff['Dn'] = dff['D']/dff['TN']
-dff['Ln'] = dff['L']/dff['TN']
-dff['GFn'] = dff['GF']/dff['TN']
-dff['GAn'] = dff['GA']/dff['TN']
-dff['GDn'] = dff['GD']/dff['TN']
+df['TN'] = df['Pld']/2. + 1 # Number of teams
+df['Wn'] = df['W']/df['TN']
+df['Dn'] = df['D']/df['TN']
+df['Ln'] = df['L']/df['TN']
+df['GFn'] = df['GF']/df['TN']
+df['GAn'] = df['GA']/df['TN']
+df['GDn'] = df['GD']/df['TN']
 sfactor = 5
 
 
-MAX = dff.groupby(['year','league']).max().unstack().apply(pd.Series.interpolate)
-pd.rolling_mean(MAX['Wn'], sfactor).plot(lw = 1.5)
-pd.rolling_mean(MAX['GFn'], sfactor).plot(lw = 1.5)
+max_group = df.groupby(['year','league']).max().unstack().apply(pd.Series.interpolate)
+ax = max_group['Pos'].plot(subplots=True,figsize=(6, 6), sharex=True, legend=None)
+labs = max_group['GF'].columns.values
 
-MEAN = dff.groupby(['year','league']).mean().unstack().apply(pd.Series.interpolate)
-pd.rolling_mean(MEAN['Wn'], sfactor).plot(lw = 1.5)
-pd.rolling_mean(MEAN['GFn'], sfactor).plot(lw = 1.5)
-pd.rolling_mean(MEAN['GAn'], sfactor).plot(lw = 1.5)
+for i in [0,1,2,3]:
+    ax[i].set_ylim(10,24)
+    ax[i].set_ylabel('Teams')
+    ax[i].set_title(labs[i])
+    #ax[i].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+plt.tight_layout()
 
+#####################################
+
+grouped = df.groupby(['year','league']).mean().unstack().apply(pd.Series.interpolate)
+
+pd.rolling_mean(grouped['Wn'], 5).plot(lw = 1.5)
+plt.legend(loc='left')
+plt.title('Average number of victories divided by the number of teams')
+plt.ylabel('')
+plt.tight_layout()
+plt.savefig('figures/Wn.png', dpi=300)
+
+pd.rolling_mean(grouped['W'], 5).plot(lw = 1.5)
+plt.legend(loc='left')
+plt.title('Average number of victories')
+plt.ylabel('')
+plt.tight_layout()
+plt.savefig('figures/W.png', dpi=300)
+
+#####################################
+
+pd.rolling_mean(grouped['Dn'], 5).plot(lw = 1.5)
+plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+plt.title('Average drawn matches')
+plt.ylabel('Normalized average of draws per year')
+
+pd.rolling_mean(grouped['GFn'], 5).plot(lw = 1.5)
+plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+plt.title('Average Goals for')
+plt.ylabel('Normalized average of GF per year')
+
+
+grouped = df.groupby(['year','league']).max().unstack().apply(pd.Series.interpolate)
+
+pd.rolling_mean(grouped['Wn'], 5).plot(lw = 1.5)
+plt.legend(loc='left')
+plt.title('Maximum number of victories divided by the number of teams')
+plt.savefig('figures/M_Wn.png', dpi=300)
 
