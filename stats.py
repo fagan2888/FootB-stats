@@ -35,7 +35,7 @@ for page in final_list:
 		tmp = FootB(page, league_name(page))
 		df = df.append(tmp, ignore_index = True)
 
-#df.to_csv('results.csv', index = False )
+df.to_csv('results.csv', index = False )
 
 df = pd.read_csv('results.csv')
 
