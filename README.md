@@ -7,7 +7,7 @@ The code scraps data from the wikipedia pages of European tournaments (Serie A, 
 
  - `stats.py` uses the functions in `FootB.py` to create the stacked table (pandas dataframe) with the data;
 
- - This python notebook contains atutorial and some usage examples.
+ - This [python notebook ](notebook/FootB.ipynb) contains a tutorial and some usage examples.  
 
 The code relies on BeautifulSoup, Pandas, numpy and seaborn (for some plots only).
 
