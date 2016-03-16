@@ -20,9 +20,13 @@ def years(start, end):
 header = {'User-Agent': 'Mozilla/5.0'} # Needed to prevent 403 error on Wikipedia
 
 def league_name(wpage):
-	a = wpage.split('_')[1:][0]
-	b = wpage.split('_')[1:][1]
-	return a + ' ' + b
+	if 'Bundesliga' in wpage:
+		out = wpage.split('_')[1:][0]
+	else:
+		a = wpage.split('_')[1:][0]
+		b = wpage.split('_')[1:][1]
+		out = a + ' ' + b
+	return out
 
 def FootB(wpage, league_name):
 
@@ -99,15 +103,17 @@ def FootB(wpage, league_name):
 	df['league'] = league_name
 
 	# Replace Unicode minus sign with '-'
-	if ' ' in df.GD.values.any():
-		df.GD = df.GD.map(lambda x: re.sub('[\s+]', '', x))
-	mask = df.GD.apply(lambda x: ('+' in x) | ('-' in x))
-	df.GD[~mask] = '-' + df.GD[~mask]
+	if 'GD' in cols: 
+		if ' ' in df.GD.values.any():
+			df.GD = df.GD.map(lambda x: re.sub('[\s+]', '', x))
+		mask = df.GD.apply(lambda x: ('+' in x) | ('-' in x))
+		df.GD[~mask] = '-' + df.GD[~mask]
 	
 	# Add ladder position from the index
 	df['Pos'] = df.index
 	df['Pld'] = df.Pld.map(lambda x: x[0:2])
 	# Transform to integers
+	df['GD'] = df['GD'].fillna(0.)
 	coltmp = ['Pos', 'Pld', 'W', 'D', 'L', 'GF', 'GA','GD']
 	df[coltmp] = df[coltmp].astype(float).astype(int)
 
