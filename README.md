@@ -1,5 +1,5 @@
 # FootB-stats
-A python web-scraping code to get football championship statistics.
+A python web-scraping code to get football championship statistics. Results are discussed in [my blog](https://vincepota.wordpress.com/2016/03/16/100-years-of-football-visualized/)
 
 The code scraps data from the wikipedia pages of European tournaments (Serie A, Premier League, La Liga, Ligue 1, Bundesliga) and gets some interesting statistics out of it. 
 
